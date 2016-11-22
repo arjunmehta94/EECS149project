@@ -23,6 +23,8 @@ class GestureListener(Leap.Listener):
 
     def on_frame(self, controller):
         frame = controller.frame()
+        if frame.id % 5 != 0:
+            return
         if not frame.hands:
             return
         for hand in frame.hands:
