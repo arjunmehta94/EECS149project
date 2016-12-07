@@ -1,5 +1,5 @@
 import connection
-import intiliazation
+import initialization
 import overrides
 
 
@@ -15,13 +15,13 @@ def main():
             vehicle = connection.connect_vehicle(port)
         else:
             vehicle = connection.connect_vehicle(port, int(baud))
-        intiliazation.arm(vehicle)
+        initialization.arm(vehicle)
         while True:
             value = raw_input("Throttle input: (Q to quit)")
             if value.lower() == 'q':
                 break
-            overrides.override_throttle(vehicle, value)
-        connection.close(vehicle)
+            overrides.override_throttle(vehicle, int(value))
+        connection.close_connection_vehicle(vehicle)
     except KeyboardInterrupt:
         print "Exiting"
         return

@@ -27,8 +27,8 @@ def arm(vehicle):
 
     print "Arming motors"
     # Copter should arm in ALT_HOLD mode
-    print "Vehicle mode: " + str(set_vehicle_mode("ALT_HOLD"))
-    print "Armed: " + str(arm_vehicle())
+    print "Vehicle mode: " + str(set_vehicle_mode(vehicle, "ALT_HOLD"))
+    print "Armed: " + str(arm_vehicle(vehicle))
 
     # Confirm vehicle armed before attempting to take off
     while not vehicle.armed:
