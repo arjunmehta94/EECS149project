@@ -2,3 +2,4 @@ ROLL = '1'
 PITCH = '2'
 THROTTLE = '3'
 YAW = '4'
+ALT_HOLD = "ALT_HOLD"
