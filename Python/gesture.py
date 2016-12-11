@@ -8,7 +8,7 @@ import sys
 class GestureListener(Leap.Listener):
 
     def on_init(self, controller):
-        self.serial_connection = establish_connection()
+        #self.serial_connection = establish_connection()
         print "Initialized"
 
     def on_connect(self, controller):
@@ -18,7 +18,7 @@ class GestureListener(Leap.Listener):
         print "Disconnected"
 
     def on_exit(self, controller):
-        close_connection(self.serial_connection)
+        #close_connection(self.serial_connection)
         print "Exit"
 
     def on_frame(self, controller):
@@ -36,7 +36,7 @@ class GestureListener(Leap.Listener):
                 direction.yaw * Leap.RAD_TO_DEG
             )
             print(send_string)
-            self.serial_connection.write(send_string)
+            #self.serial_connection.write(send_string)
 
 
 def main():
