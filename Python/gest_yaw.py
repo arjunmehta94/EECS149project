@@ -20,6 +20,11 @@ def hand_stable(frame, controller):
 def low_pass_filter(old, new, alpha):
     return old + alpha * (new - old)
 
+def get_left_right_hands(frame):
+    if frame.hands[0].is_left:
+        return [frame.hands[0], frame.hands[1]]
+    return [frame.hands[1], frame.hands[0]]
+
 def main():
     #listener = GestureListener()
     try:
@@ -51,7 +56,7 @@ def main():
             #$print(controller.is_paused)
             if controller.is_connected:
                 frame = controller.frame()
-                if len(frame.hands) > 1:
+                if len(frame.hands) == 2:
                     if left_coming_back:
                         height = 0
                         left_coming_back = False
@@ -70,27 +75,28 @@ def main():
                         frame = controller.frame()
                         time.sleep(0.1)
                         #print "Set throttle to 1500"
-                    for hand in frame.hands:
+                    left_hand, right_hand = get_left_right_hands(frame)
+                    #for hand in frame.hands:
                         #print str(hand.is_valid)
-                        if hand.is_left:
-                            height = low_pass_filter(height, hand.translation(first_frame).y, alpha)
-                            print "Filtered Height: " + str(height) + " Original: " + str(hand.translation(first_frame).y)
-                        else:
-                            direction = hand.direction
-                            normal = hand.palm_normal
-                            yaw = direction.yaw * Leap.RAD_TO_DEG
-                            pitch = low_pass_filter(pitch, direction.pitch * Leap.RAD_TO_DEG, alpha)
-                            roll = low_pass_filter(roll, normal.roll * Leap.RAD_TO_DEG, alpha)
-                            yaw = low_pass_filter(yaw, direction.yaw * Leap.RAD_TO_DEG, alpha)
-                            # pitch, roll, yaw = direction.pitch * Leap.RAD_TO_DEG
-                            # normal.roll * Leap.RAD_TO_DEG
-                            # direction.yaw * Leap.RAD_TO_DEG
-                            #print "Pitch: " + str(pitch) + " Roll: " + str(roll) + " Yaw: " + str(yaw)
-                            #print "Sending roll: " + str(roll) + ' mapped to: ' + str(int(mapper(roll)))
-                        # vehicle.channels.overrides['1'] = int(mapper(roll))
-                        # vehicle.channels.overrides['2'] = int(mapper(pitch))
-                        # vehicle.channels.overrides['4'] = int(mapper(yaw))
-                        time.sleep(0.1)
+                    #if hand.is_left:
+                    height = low_pass_filter(height, left_hand.translation(first_frame).y, alpha)
+                    print "Filtered Height: " + str(height) + " Original: " + str(left_hand.translation(first_frame).y)
+                    #else:
+                    direction = right_hand.direction
+                    normal = right_hand.palm_normal
+                    yaw = direction.yaw * Leap.RAD_TO_DEG
+                    pitch = low_pass_filter(pitch, direction.pitch * Leap.RAD_TO_DEG, alpha)
+                    roll = low_pass_filter(roll, normal.roll * Leap.RAD_TO_DEG, alpha)
+                    yaw = low_pass_filter(yaw, direction.yaw * Leap.RAD_TO_DEG, alpha)
+                    # pitch, roll, yaw = direction.pitch * Leap.RAD_TO_DEG
+                    # normal.roll * Leap.RAD_TO_DEG
+                    # direction.yaw * Leap.RAD_TO_DEG
+                    print "Pitch: " + str(pitch) + " Roll: " + str(roll) + " Yaw: " + str(yaw)
+                    #print "Sending roll: " + str(roll) + ' mapped to: ' + str(int(mapper(roll)))
+                    # vehicle.channels.overrides['1'] = int(mapper(roll))
+                    # vehicle.channels.overrides['2'] = int(mapper(pitch))
+                    # vehicle.channels.overrides['4'] = int(mapper(yaw))
+                    time.sleep(0.1)
                 elif len(frame.hands) == 1:
                     frame = controller.frame()
                     if frame.hands[0].is_left:
