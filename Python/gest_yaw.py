@@ -2,6 +2,20 @@ from lib.unix import Leap
 import time
 #from dronekit import connect, VehicleMode
 from scipy.interpolate import interp1d
+from .constants import (
+    ROLL_PITCH_YAW_MIN,
+    ROLL_PITCH_YAW_MIN_MAP,
+    ROLL_PITCH_YAW_MAX,
+    ROLL_PITCH_YAW_MAX_MAP,
+    THROTTLE_MIN_TAKEOFF,
+    THROTTLE_MAX_TAKEOFF,
+    THROTTLE_MAX_TAKEOFF_MAP,
+    THROTTLE_MIN_TAKEOFF_MAP,
+    THROTTLE_MIN_FLIGHT,
+    THROTTLE_MAX_FLIGHT,
+    THROTTLE_MAX_FLIGHT_MAP,
+    THROTTLE_MIN_FLIGHT_MAP
+)
 
 def hand_stable(frame, controller):
     print "Keep your hand flat and stable"
@@ -40,7 +54,15 @@ def main():
         alpha = 0.2
         print "Leap connected"
         # start_time = time.time()
-        # mapper = interp1d([-90.0, 90.0], [1000, 2000])
+        rpc_mapper = interp1d(
+            [ROLL_PITCH_YAW_MIN, ROLL_PITCH_YAW_MAX], [ROLL_PITCH_YAW_MIN_MAP, ROLL_PITCH_YAW_MAX_MAP]
+        )
+        throttle_mapper_takeoff = interp1d(
+            [THROTTLE_MIN_TAKEOFF, THROTTLE_MAX_TAKEOFF], [THROTTLE_MIN_TAKEOFF_MAP, THROTTLE_MAX_TAKEOFF_MAP]
+        )
+        throttle_mapper_flight = interp1d(
+            [THROTTLE_MIN_FLIGHT, THROTTLE_MAX_FLIGHT], [THROTTLE_MIN_FLIGHT_MAP, THROTTLE_MAX_FLIGHT_MAP]
+        )
         # vehicle = connect('com7', wait_ready=True, baud=57600)
         # print "Connected"
         # vehicle.mode = VehicleMode('STABILIZE')
@@ -92,10 +114,10 @@ def main():
                     # normal.roll * Leap.RAD_TO_DEG
                     # direction.yaw * Leap.RAD_TO_DEG
                     print "Pitch: " + str(pitch) + " Roll: " + str(roll) + " Yaw: " + str(yaw)
-                    #print "Sending roll: " + str(roll) + ' mapped to: ' + str(int(mapper(roll)))
-                    # vehicle.channels.overrides['1'] = int(mapper(roll))
-                    # vehicle.channels.overrides['2'] = int(mapper(pitch))
-                    # vehicle.channels.overrides['4'] = int(mapper(yaw))
+                    #print "Sending roll: " + str(roll) + ' mapped to: ' + str(int(rpc_mapper(roll)))
+                    # vehicle.channels.overrides['1'] = int(rpc_mapper(roll))
+                    # vehicle.channels.overrides['2'] = int(rpc_mapper(pitch))
+                    # vehicle.channels.overrides['4'] = int(rpc_mapper(yaw))
                     time.sleep(0.1)
                 elif len(frame.hands) == 1:
                     frame = controller.frame()
