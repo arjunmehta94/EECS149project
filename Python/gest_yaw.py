@@ -1,8 +1,8 @@
-from lib.unix import Leap
+from lib.windows import Leap
 import time
-#from dronekit import connect, VehicleMode
+from dronekit import connect, VehicleMode
 from scipy.interpolate import interp1d
-from .constants import (
+from constants import (
     ROLL_PITCH_YAW_MIN,
     ROLL_PITCH_YAW_MIN_MAP,
     ROLL_PITCH_YAW_MAX,
@@ -16,6 +16,26 @@ from .constants import (
     THROTTLE_MAX_FLIGHT_MAP,
     THROTTLE_MIN_FLIGHT_MAP
 )
+from numpy import clip
+class RollPitchYaw(object):
+    def __init__(self):
+        self.roll = 0
+        self.pitch = 0
+        self.yaw = 0
+    
+    def __str__(self):
+        return ' | '.join([self.roll, self.pitch, self.yaw])
+
+    def __repr__(self):
+        return ' | '.join([self.roll, self.pitch, self.yaw])
+
+rollpitchyaw = RollPitchYaw()
+
+def attitude_callback(self, attr_name, value):
+    global rollpitchyaw
+    rollpitchyaw.roll = value.roll* 57.2958
+    rollpitchyaw.pitch = value.pitch
+    rollpitchyaw.yaw = value.yaw
 
 def hand_stable(frame, controller):
     print "Keep your hand flat and stable"
@@ -40,6 +60,7 @@ def get_left_right_hands(frame):
     return [frame.hands[1], frame.hands[0]]
 
 def main():
+    global rollpitchyaw
     #listener = GestureListener()
     try:
         left_coming_back = False
@@ -63,12 +84,14 @@ def main():
         throttle_mapper_flight = interp1d(
             [THROTTLE_MIN_FLIGHT, THROTTLE_MAX_FLIGHT], [THROTTLE_MIN_FLIGHT_MAP, THROTTLE_MAX_FLIGHT_MAP]
         )
-        # vehicle = connect('com7', wait_ready=True, baud=57600)
-        # print "Connected"
-        # vehicle.mode = VehicleMode('STABILIZE')
-        # vehicle.armed = True
-        # print "Armed"
-        # time.sleep(3)
+        vehicle = connect('com3', wait_ready=True, baud=57600)
+
+        print "Connected"
+        vehicle.mode = VehicleMode('ALT_HOLD')
+        vehicle.armed = True
+        print "Armed"
+        vehicle.add_attribute_listener('attitude', attitude_callback)
+        time.sleep(3)
         #controller.add_listener(listener)
         while True:
             #print "inside loop"
@@ -76,7 +99,7 @@ def main():
             
             #start_time = time.time()
             #$print(controller.is_paused)
-            if controller.is_connected:
+            if controller.is_connected and vehicle.location.global_relative_frame.alt > 1:
                 frame = controller.frame()
                 if len(frame.hands) == 2:
                     if left_coming_back:
@@ -101,23 +124,32 @@ def main():
                     #for hand in frame.hands:
                         #print str(hand.is_valid)
                     #if hand.is_left:
+                    if height < 0:
+                        height = 0
+                    elif height > 150:
+                        height = 150
                     height = low_pass_filter(height, left_hand.translation(first_frame).y, alpha)
-                    print "Filtered Height: " + str(height) + " Original: " + str(left_hand.translation(first_frame).y)
+                    
+                    # print "Filtered Height: " + str(height) + " Original: " + str(left_hand.translation(first_frame).y)
                     #else:
                     direction = right_hand.direction
                     normal = right_hand.palm_normal
                     yaw = direction.yaw * Leap.RAD_TO_DEG
                     pitch = low_pass_filter(pitch, direction.pitch * Leap.RAD_TO_DEG, alpha)
+                    roll_error = clip(normal.roll * Leap.RAD_TO_DEG, -12, 12) - rollpitchyaw.roll 
                     roll = low_pass_filter(roll, normal.roll * Leap.RAD_TO_DEG, alpha)
                     yaw = low_pass_filter(yaw, direction.yaw * Leap.RAD_TO_DEG, alpha)
                     # pitch, roll, yaw = direction.pitch * Leap.RAD_TO_DEG
                     # normal.roll * Leap.RAD_TO_DEG
                     # direction.yaw * Leap.RAD_TO_DEG
-                    print "Pitch: " + str(pitch) + " Roll: " + str(roll) + " Yaw: " + str(yaw)
+                    # print "Pitch: " + str(pitch) + " Roll: " + str(roll) + " Yaw: " + str(yaw)
+
                     #print "Sending roll: " + str(roll) + ' mapped to: ' + str(int(rpc_mapper(roll)))
-                    # vehicle.channels.overrides['1'] = int(rpc_mapper(roll))
+                    vehicle.channels.overrides['1'] = clip(1498 -  15*int(roll_error), 989 , 2007)
+                    print " Roll: " + str(roll) + " PWM: " + str(vehicle.channels['1']) + " roll eror: " + str(roll_error) + " drone roll: " + str(rollpitchyaw.roll)
                     # vehicle.channels.overrides['2'] = int(rpc_mapper(pitch))
                     # vehicle.channels.overrides['4'] = int(rpc_mapper(yaw))
+                    # vehicle.channels.overrides['3'] = int(throttle_mapper_takeoff(height))
                     time.sleep(0.1)
                 elif len(frame.hands) == 1:
                     frame = controller.frame()
@@ -133,8 +165,14 @@ def main():
                             frame = controller.frame()
                         #right_coming_back = True
                         #import pdb; pdb.set_trace()
+                        if height < 0:
+                            height = 0
+                        elif height > 150:
+                            height = 150
                         height = low_pass_filter(height, frame.hands[0].translation(first_frame).y, alpha)
+                        
                         print "Filtered Height: " + str(height) + " Original: " + str(frame.hands[0].translation(first_frame).y)
+                        # vehicle.channels.overrides['3'] = int(throttle_mapper_takeoff(height))
                     else:
                         #right_coming_back = False
                         if not left_coming_back:
@@ -152,6 +190,10 @@ def main():
                             roll = low_pass_filter(roll, normal.roll * Leap.RAD_TO_DEG, alpha)
                             yaw = low_pass_filter(yaw, direction.yaw * Leap.RAD_TO_DEG, alpha)
                             print "Pitch: " + str(pitch) + " Roll: " + str(roll) + " Yaw: " + str(yaw)
+                            vehicle.channels.overrides['1'] = int(rpc_mapper(roll))
+                            # vehicle.channels.overrides['2'] = int(rpc_mapper(pitch))
+                            # vehicle.channels.overrides['4'] = int(rpc_mapper(yaw))
+                            
                     time.sleep(0.1)
                 else:
                     if not left_coming_back and not right_coming_back:
@@ -163,6 +205,7 @@ def main():
                         # vehicle.channels.overrides['2'] = None
                         # vehicle.channels.overrides['3'] = None
                         # vehicle.channels.overrides['4'] = None
+                        vehicle.channels.overrides = {}
                         # print "Release channels"
                         time.sleep(0.1)
                         first_frame = None
@@ -181,11 +224,12 @@ def main():
                 # vehicle.channels.overrides['2'] = None
                 # vehicle.channels.overrides['3'] = None
                 # vehicle.channels.overrides['4'] = None
+                vehicle.channels.overrides = {}
                 # print "Release channels"
-                # vehicle.close()
+                #vehicle.close()
                 # print "Close telemetry connection"
-                time.sleep(1)
-                break
+                time.sleep(.1)
+                #break
     except KeyboardInterrupt, ValueError:
         # print "Relinquishing control"
         # vehicle.channels.overrides['1'] = None
@@ -202,6 +246,7 @@ def main():
         return
                     
     print "Exit"
+    vehicle.close()
     # vehicle.armed = False
 
 if __name__ == "__main__":
