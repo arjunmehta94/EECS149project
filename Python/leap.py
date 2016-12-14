@@ -2,7 +2,7 @@ from constants import (
     MIN_THROTTLE,
     ALPHA
 )
-from lib.unix import Leap
+from lib.windows import Leap
 import time
 import threading
 

@@ -11,7 +11,7 @@ import threading
 vehicle = None
 leap_obj = LeapMotion()
 drone_response_obj = Drone()
-from lib.unix import Leap
+from lib.windows import Leap
 import time
 def leap_update():
     global leap_obj, drone_response_obj
