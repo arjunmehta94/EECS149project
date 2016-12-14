@@ -19,7 +19,7 @@ class DroneVehicle(Vehicle):
         super(DroneVehicle, self).__init__(*args)
         # Create an Vehicle.raw_imu object with initial values set to None.
         self._raw_imu = RawIMU()
-        self.decorator()
+        #self.decorator()
 
     # Create a message listener using the decorator.
         @self.on_message('RAW_IMU')

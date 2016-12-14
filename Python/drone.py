@@ -21,13 +21,13 @@ class Drone(object):
         self.throttle = throttle
 
     def update_pitch(self, pitch):
-        self.pitch = pitch
+        self.pitch = pitch * 57.2958
 
     def update_roll(self, roll):
-        self.roll = roll
+        self.roll = roll * 57.2958
 
     def update_yaw(self, yaw):
-        self.yaw = yaw
+        self.yaw = yaw * 57.2958
 
     def update_height(self, height):
         self.height = height
@@ -38,7 +38,7 @@ class Drone(object):
         self.update_yaw(yaw)
 
     def __str__(self):
-        return ' | '.join([str(x) for x in self.acc])
+        return ' | '.join([str(x) for x in self.acc] + [str(self.pitch)] + [str(self.roll)] + [str(self.yaw)])
 
     def __repr__(self):
-        return ' | '.join([str(x) for x in self.acc])
+        return ' | '.join([str(x) for x in self.acc] + [str(self.pitch)] + [str(self.roll)] + [str(self.yaw)])

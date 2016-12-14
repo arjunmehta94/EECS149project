@@ -121,11 +121,11 @@ def main():
             print "Exiting"
             return
         port = raw_input("Enter port: ")
-        #vehicle = connect_vehicle(port)
+        vehicle = connect_vehicle(port)
         print "Connected!"
         time.sleep(0.5)
-        #vehicle.add_listener('raw_imu', imu_callback)
-        #vehicle.add_listener('attitude', attitude_callback)
+        vehicle.add_attribute_listener('raw_imu', imu_callback)
+        vehicle.add_attribute_listener('attitude', attitude_callback)
         val = raw_input("Arm Y/N")
         if val.lower() == 'n':
             print "Disconnecting, exiting"
