@@ -1,0 +1,5 @@
+RC 1: Roll min: 989 max: 2007
+RC 2: Pitch min: 992 max: 2010
+RC 3: Throttle min: 990 max: 2009
+RC 4: Yaw min: 990 max: 2010
+RC 5: Pot min: 990 max: 2010
