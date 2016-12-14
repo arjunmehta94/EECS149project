@@ -34,8 +34,8 @@ rollpitchyaw = RollPitchYaw()
 def attitude_callback(self, attr_name, value):
     global rollpitchyaw
     rollpitchyaw.roll = value.roll* 57.2958
-    rollpitchyaw.pitch = value.pitch
-    rollpitchyaw.yaw = value.yaw
+    rollpitchyaw.pitch = value.pitch* 57.2958
+    rollpitchyaw.yaw = value.yaw* 57.2958
 
 def hand_stable(frame, controller):
     print "Keep your hand flat and stable"
@@ -85,14 +85,14 @@ def main():
         throttle_mapper_flight = interp1d(
             [THROTTLE_MIN_FLIGHT, THROTTLE_MAX_FLIGHT], [THROTTLE_MIN_FLIGHT_MAP, THROTTLE_MAX_FLIGHT_MAP]
         )
-        vehicle = connect('com3', wait_ready=True, baud=57600)
+        vehicle = connect('com7', wait_ready=True, baud=57600)
 
         print "Connected"
         vehicle.mode = VehicleMode('STABILIZE')
         vehicle.armed = True
         print "Armed"
         vehicle.add_attribute_listener('attitude', attitude_callback)
-        time.sleep(3)
+        time.sleep(1)
         #controller.add_listener(listener)
         while True:
             #print "inside loop"
@@ -137,12 +137,14 @@ def main():
                     direction = right_hand.direction
                     normal = right_hand.palm_normal
                     yaw = direction.yaw * Leap.RAD_TO_DEG
-                    pitch = low_pass_filter(pitch, direction.pitch * Leap.RAD_TO_DEG, alpha)
+                    #pitch = low_pass_filter(pitch, direction.pitch * Leap.RAD_TO_DEG, alpha)
                     roll_error = -clip((normal.roll * Leap.RAD_TO_DEG)/4, -7, 7) - rollpitchyaw.roll 
-                    pitch_error = clip((normal.pitch * Leap.RAD_TO_DEG)/4, -7, 7) - rollpitchyaw.pitch 
-                    yaw_error = clip((normal.yaw * Leap.RAD_TO_DEG)/4, -10, 10) + yaw_on_entry - rollpitchyaw.yaw 
+                    #pitch_error = clip((normal.pitch * Leap.RAD_TO_DEG)/4, -7, 7) - rollpitchyaw.pitch 
+                    pitch_error = -clip((direction.pitch * Leap.RAD_TO_DEG)/4, -7, 7) - rollpitchyaw.pitch
+                    #yaw_error = clip((normal.yaw * Leap.RAD_TO_DEG)/4, -10, 10) + yaw_on_entry - rollpitchyaw.yaw 
                     #roll = low_pass_filter(roll, normal.roll * Leap.RAD_TO_DEG, alpha)
                     roll = normal.roll * Leap.RAD_TO_DEG
+                    pitch = direction.pitch * Leap.RAD_TO_DEG
                     # yaw = low_pass_filter(yaw, direction.yaw * Leap.RAD_TO_DEG, alpha)
                     # pitch, roll, yaw = direction.pitch * Leap.RAD_TO_DEG
                     # normal.roll * Leap.RAD_TO_DEG
@@ -150,10 +152,12 @@ def main():
                     # print "Pitch: " + str(pitch) + " Roll: " + str(roll) + " Yaw: " + str(yaw)
 
                     #print "Sending roll: " + str(roll) + ' mapped to: ' + str(int(rpc_mapper(roll)))
-                    vehicle.channels.overrides['1'] = clip(1498  + 12*int(roll_error), 989 , 2007)
+                    #vehicle.channels.overrides['1'] = clip(1498  + 12*int(roll_error), 989 , 2007)
+                    vehicle.channels.overrides['2'] = clip(1498  + 13*int(pitch_error), 989 , 2007)
                     # vehicle.channels.overrides['2'] = clip(1501 -  10*int(pitch_error), 992 , 2010)
                     # vehicle.channels.overrides['4'] = clip(1500 -  10*int(yaw_error), 990 , 2010)
-                    print " Roll: " + str(roll) + " PWM: " + str(vehicle.channels['1']) + " roll eror: " + str(roll_error) + " drone roll: " + str(rollpitchyaw.roll)
+                    #print " Roll: " + str(roll) + " PWM: " + str(vehicle.channels['1']) + " roll eror: " + str(roll_error) + " drone roll: " + str(rollpitchyaw.roll)
+                    print " Pitch: " + str(pitch) + " PWM: " + str(vehicle.channels['2']) + " pitch eror: " + str(pitch_error) + " drone pitch: " + str(rollpitchyaw.pitch)
                     # vehicle.channels.overrides['2'] = int(rpc_mapper(pitch))
                     # vehicle.channels.overrides['4'] = int(rpc_mapper(yaw))
                     # vehicle.channels.overrides['3'] = int(throttle_mapper_takeoff(height))
