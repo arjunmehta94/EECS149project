@@ -76,7 +76,7 @@ class RollPitchYaw(object):
         return ' | '.join([self.roll, self.pitch, self.yaw, self.ax, self.ay, self.az])
 
 rollpitchyaw = RollPitchYaw()
-Throttle_PID = PID(P = 175.0, I = 0.0, D = 0.0 )
+Throttle_PID = PID(P = 190.0, I = 0.0, D = 0.0 )
 Throttle_PID.SetPoint = 0.0
 Throttle_PID.setSampleTime(0.028)
 Throttle_PID.SetPoint = 0.0
@@ -188,7 +188,7 @@ def main():
         left_hand_out_once = False
         print "Leap connected"
         # start_time = time.time()
-        Throttle_mapper = interp1d([-150, 150], [-1.5, -0.5])
+        Throttle_mapper = interp1d([-150, 150], [-1.5, 0.2])
         rpc_mapper = interp1d(
             [ROLL_PITCH_YAW_MIN, ROLL_PITCH_YAW_MAX], [ROLL_PITCH_YAW_MIN_MAP, ROLL_PITCH_YAW_MAX_MAP]
         )
@@ -202,7 +202,7 @@ def main():
 
         print "Connected"
         vehicle.mode = VehicleMode('STABILIZE')
-        vehicle.armed = True
+        #vehicle.armed = True
         print "Armed"
         vehicle.add_attribute_listener('attitude', attitude_callback)
         vehicle.add_attribute_listener('raw_imu', imu_callback)
@@ -288,19 +288,19 @@ def main():
 
                     Throttle_PID.update(inertial_acc[2,0])
                     ''' Setting Values '''
-                    vehicle.channels.overrides['1'] = clip(1498  + 12*int(roll_error), 989 , 2007)
-                    vehicle.channels.overrides['2'] = clip(1501 -  13*int(pitch_error), 992 , 2010)
-                    vehicle.channels.overrides['4'] = clip(1500 + 4.5*int(yaw_error), 990 , 2010)
-                    vehicle.channels.overrides['3'] = clip(1200 + Throttle_PID.output, 995 , 1400)
+                    # vehicle.channels.overrides['1'] = clip(1498  + 12*int(roll_error), 989 , 2007)
+                    # vehicle.channels.overrides['2'] = clip(1501 -  13*int(pitch_error), 992 , 2010)
+                    # vehicle.channels.overrides['4'] = clip(1500 + 8*int(yaw_error), 990 , 2010)
+                    vehicle.channels.overrides['3'] = clip(1200 + Throttle_PID.output, 995 , 1420)
                     ''' Prints '''
-                    print "Height: " + str(height) + "PWM: " + str(1200 + Throttle_PID.output)
+                    print "Height: " + str(height) + "PWM: " + str(1200 + Throttle_PID.output) + "Z: " + str(inertial_acc[2, 0])
                     # print " Roll: " + str(roll) + " PWM: " + str(vehicle.channels['1']) + " roll eror: " + str(roll_error) + " drone roll: " + str(rollpitchyaw.roll)
                     # print " Pitch: " + str(pitch) + " PWM: " + str(vehicle.channels['2']) + " pitch eror: " + str(pitch_error) + " drone pitch: " + str(rollpitchyaw.pitch)
                     # print " Yaw: " + str(yaw) + " PWM: " + str(vehicle.channels['4']) + " yaw eror: " + str(yaw_error) + " Zeroed yaw: " + str(zeroed_yaw) + " Drone yaw: " + str(rollpitchyaw.yaw )
                     #print " Roll: " + str(drone_roll) + " Pitch: " + str(drone_pitch) + " Yaw: " + str(drone_yaw) 
                     #print " body_x: " + str(body_x) + " inertial_x: " + str(inertial_acc[0,0]) + " body_y: " + str(body_y) + " inertial_y: " + str(inertial_acc[1,0]) + " body_z: " + str(body_z) + " inertial_z: " + str(inertial_acc[2,0])
 
-                    time.sleep(0.028 * 4)
+                    time.sleep(0.028)
                 elif len(frame.hands) == 1:
                     # NEED TO TEST THIS PART FOR WHAT TO SEND WHILE ITS CHECKING THIS SHIT
                     if not single_hand_check:
@@ -349,12 +349,12 @@ def main():
                         
                         Throttle_PID.SetPoint = Throttle_mapper(height)
                         Throttle_PID.update(inertial_acc[2,0])
-                        vehicle.channels.overrides['3'] = clip(1200 + Throttle_PID.output, 995 , 1400)
+                        vehicle.channels.overrides['3'] = clip(1200 + int(Throttle_PID.output), 995 , 1440)
                         #vehicle.channels.overrides['1'] = clip(1498  + 12*int(roll_error), 989 , 2007)
                         #vehicle.channels.overrides['2'] = clip(1501 -  13*int(pitch_error), 992 , 2010)
                         #vehicle.channels.overrides['4'] = clip(1500 + 4.5*int(yaw_error), 990 , 2010)
                         
-                        print "Height: " + str(height) + "PWM: " + str(1200 + Throttle_PID.output)
+                        print "Height: " + str(height) + "PWM: " + str(1200 + int(Throttle_PID.output))  + "Z: " + str(inertial_acc[2, 0])
                         time.sleep(0.028)
                         # vehicle.channels.overrides['3'] = int(throttle_mapper_takeoff(height))
                     else:
@@ -392,12 +392,13 @@ def main():
                             roll = normal.roll * Leap.RAD_TO_DEG
                             pitch = direction.pitch * Leap.RAD_TO_DEG
                             yaw = direction.yaw * Leap.RAD_TO_DEG
-                            print "Pitch: " + str(pitch) + " Roll: " + str(roll) + " Yaw: " + str(yaw)
-                            #vehicle.channels.overrides['3'] = clip(1200 + Throttle_PID.output, 995 , 1400)
-                            vehicle.channels.overrides['1'] = clip(1498  + 12*int(roll_error), 989 , 2007)
-                            vehicle.channels.overrides['2'] = clip(1501 -  13*int(pitch_error), 992 , 2010)
-                            vehicle.channels.overrides['4'] = clip(1500 + 4.5*int(yaw_error), 990 , 2010)
-                            time.sleep(0.028 * 3)
+                            # print "Pitch: " + str(pitch) + " Roll: " + str(roll) + " Yaw: " + str(yaw)
+                            # vehicle.channels.overrides['3'] = clip(1200 + Throttle_PID.output, 995 , 1420)
+                            # vehicle.channels.overrides['1'] = clip(1498  + 12*int(roll_error), 989 , 2007)
+                            # vehicle.channels.overrides['2'] = clip(1501 -  13*int(pitch_error), 992 , 2010)
+                            # vehicle.channels.overrides['4'] = clip(1500 + 4.5*int(yaw_error), 990 , 2010)
+                            # print " Yaw: " + str(yaw) + " PWM: " + str(vehicle.channels['4']) + " yaw eror: " + str(yaw_error) + " Zeroed yaw: " + str(zeroed_yaw) + " Drone yaw: " + str(rollpitchyaw.yaw )
+                            # time.sleep(0.028)
                     # time.sleep(0.028 * 4)
                 else:
                     if not left_coming_back or not right_coming_back:
@@ -448,7 +449,7 @@ def main():
                         # vehicle.channels.overrides['2'] = clip(1501 -  13*int(pitch_error), 992 , 2010)
                         # vehicle.channels.overrides['4'] = clip(1500 + 4.5*int(yaw_error), 990 , 2010)
                         pass
-                    time.sleep(0.028 * 4)
+                    time.sleep(0.028)
             else:
                 # print "Relinquishing control"
                 # vehicle.channels.overrides['3'] = 1300
