@@ -6,6 +6,7 @@ from leap import LeapMotion
 from drone import Drone
 import time
 import threading
+from numpy import clip
 #from thread_funcs import leap_update
 
 vehicle = None
@@ -17,6 +18,7 @@ def leap_update():
     global leap_obj, drone_response_obj
     #print "Executing"
     leap_obj.lock.acquire()
+    drone_response_obj.lock.acquire()
     if leap_obj._controller.is_connected:
         leap_obj._frame = leap_obj._controller.frame()
         if len(leap_obj._frame.hands) == 2:
@@ -43,9 +45,16 @@ def leap_update():
             #print "Filtered leap_obj.height: " + str(leap_obj.height) + " Original: " + str(left_hand.translation(leap_obj._first_frame).y)
             direction = right_hand.direction
             normal = right_hand.palm_normal
-            leap_obj.pitch = leap_obj._low_pass_filter(leap_obj.pitch, direction.pitch * Leap.RAD_TO_DEG)
-            leap_obj.roll = leap_obj._low_pass_filter(leap_obj.roll, normal.roll * Leap.RAD_TO_DEG)
-            leap_obj.yaw = leap_obj._low_pass_filter(leap_obj.yaw, direction.yaw * Leap.RAD_TO_DEG)
+            # roll_error = clip(normal.roll * Leap.RAD_TO_DEG, -12, 12) - drone_response_obj.roll
+            # roll = clip(1498 -  15*int(roll_error), 989 , 2007)
+            leap_obj.update_p_control_roll_pitch_yaw(
+                normal.roll * Leap.RAD_TO_DEG, drone_response_obj.roll,
+                direction.pitch * Leap.RAD_TO_DEG, drone_response_obj.pitch,
+                direction.yaw * Leap.RAD_TO_DEG, drone_response_obj.yaw
+            )
+            # leap_obj.pitch = leap_obj._low_pass_filter(leap_obj.pitch, direction.pitch * Leap.RAD_TO_DEG)
+            # leap_obj.roll = leap_obj._low_pass_filter(leap_obj.roll, normal.roll * Leap.RAD_TO_DEG)
+            # leap_obj.yaw = leap_obj._low_pass_filter(leap_obj.yaw, direction.yaw * Leap.RAD_TO_DEG)
             #print "leap.pitch: " + str(leap_obj.pitch) + " leap_obj.roll: " + str(leap_obj.roll) + " leap_obj.yaw: " + str(leap_obj.yaw)
             #time.sleep(0.1)
         elif len(leap_obj._frame.hands) == 1:
@@ -69,9 +78,14 @@ def leap_update():
                 leap_obj._right_coming_back = False
                 direction = hand.direction
                 normal = hand.palm_normal
-                leap_obj.pitch = leap_obj._low_pass_filter(leap_obj.pitch, direction.pitch * Leap.RAD_TO_DEG)
-                leap_obj.roll = leap_obj._low_pass_filter(leap_obj.roll, normal.roll * Leap.RAD_TO_DEG)
-                leap_obj.yaw = leap_obj._low_pass_filter(leap_obj.yaw, direction.yaw * Leap.RAD_TO_DEG)
+                leap_obj.update_p_control_roll_pitch_yaw(
+                    normal.roll * Leap.RAD_TO_DEG, drone_response_obj.roll,
+                    direction.pitch * Leap.RAD_TO_DEG, drone_response_obj.pitch,
+                    direction.yaw * Leap.RAD_TO_DEG, drone_response_obj.yaw
+                )
+                # leap_obj.pitch = leap_obj._low_pass_filter(leap_obj.pitch, direction.pitch * Leap.RAD_TO_DEG)
+                # leap_obj.roll = leap_obj._low_pass_filter(leap_obj.roll, normal.roll * Leap.RAD_TO_DEG)
+                # leap_obj.yaw = leap_obj._low_pass_filter(leap_obj.yaw, direction.yaw * Leap.RAD_TO_DEG)
                 #print "leap.pitch: " + str(leap_obj.pitch) + " leap.roll: " + str(leap_obj.roll) + " leap.yaw: " + str(leap_obj.yaw)
             #time.sleep(0.1)
         else:
@@ -86,6 +100,7 @@ def leap_update():
                 leap_obj._right_coming_back = True
     else:
         time.sleep(1)
+    drone_response_obj.lock.release()
     leap_obj.lock.release()
     threading.Timer(0.1, leap_update).start()
 
@@ -111,7 +126,6 @@ def main():
         leap_thread = threading.Timer(0.1, leap_update)
 
         # todo: add listeners on vehicle for responses
-        
 
         # todo: initialize and start thread for leap
 
@@ -140,6 +154,7 @@ def main():
             drone_response_obj.lock.acquire()
             print "Leap: " + str(leap_obj)
             print "Drone: " + str(drone_response_obj)
+            vehicle.override(leap_obj.get())
             drone_response_obj.lock.release()
             leap_obj.lock.release()
             #print drone_response_obj
