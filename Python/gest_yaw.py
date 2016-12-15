@@ -1,6 +1,6 @@
 from lib.windows import Leap
 import time
-from dronekit import connect, VehicleMode
+from dronekit import connect, VehicleMode, Vehicle
 from scipy.interpolate import interp1d
 from constants import (
     ROLL_PITCH_YAW_MIN,
@@ -18,19 +18,69 @@ from constants import (
 )
 from numpy import clip
 import numpy as np
+
+class RawIMU(object):
+    def __init__(self, xacc=None, yacc=None, zacc=None):
+        self.xacc = xacc
+        self.yacc = yacc
+        self.zacc = zacc
+
+    def __str__(self):
+        return "RAW_IMU: xacc={},yacc={},zacc={}".format(self.xacc, self.yacc,self.zacc)
+
+
+class DroneVehicle(Vehicle):
+
+    def __init__(self, *args):
+        super(DroneVehicle, self).__init__(*args)
+        # Create an Vehicle.raw_imu object with initial values set to None.
+        self._raw_imu = RawIMU()
+        self.decorator()
+
+    # Create a message listener using the decorator.
+        @self.on_message('RAW_IMU')
+        def listener(self, name, message):
+            """
+            The listener is called for messages that contain the string specified in the decorator,
+            passing the vehicle, message name, and the message.
+            The listener writes the message to the (newly attached) ``vehicle.raw_imu`` object
+            and notifies observers.
+            """
+            self._raw_imu.xacc = message.xacc
+            self._raw_imu.yacc = message.yacc
+            self._raw_imu.zacc = message.zacc
+            # Notify all observers of new message (with new value)
+            #   Note that argument `cache=False` by default so listeners
+            #   are updated with every new message
+            self.notify_attribute_listeners('raw_imu', self._raw_imu)
+
+    @property
+    def raw_imu(self):
+        return self._raw_imu
+
+
 class RollPitchYaw(object):
     def __init__(self):
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
+        self.ax = 0
+        self.ay = 0
+        self.az = 0
 
     def __str__(self):
-        return ' | '.join([self.roll, self.pitch, self.yaw])
+        return ' | '.join([self.roll, self.pitch, self.yaw, self.ax, self.ay, self.az])
 
     def __repr__(self):
-        return ' | '.join([self.roll, self.pitch, self.yaw])
+        return ' | '.join([self.roll, self.pitch, self.yaw, self.ax, self.ay, self.az])
 
 rollpitchyaw = RollPitchYaw()
+
+def imu_callback(self, attr_name, value):
+    global rollpitchyaw
+    rollpitchyaw.ax = value.xacc
+    rollpitchyaw.ay = value.yacc
+    rollpitchyaw.az = value.zacc
 
 def attitude_callback(self, attr_name, value):
     global rollpitchyaw
@@ -101,13 +151,14 @@ def main():
         throttle_mapper_flight = interp1d(
             [THROTTLE_MIN_FLIGHT, THROTTLE_MAX_FLIGHT], [THROTTLE_MIN_FLIGHT_MAP, THROTTLE_MAX_FLIGHT_MAP]
         )
-        vehicle = connect('com3', wait_ready=True, baud=57600)
+        vehicle = connect('com3', wait_ready=True, baud=57600, vehicle_class=DroneVehicle)
 
         print "Connected"
         vehicle.mode = VehicleMode('STABILIZE')
         vehicle.armed = True
         print "Armed"
         vehicle.add_attribute_listener('attitude', attitude_callback)
+        vehicle.add_attribute_listener('raw_imu', imu_callback)
         time.sleep(1)
         #controller.add_listener(listener)
         while True:
