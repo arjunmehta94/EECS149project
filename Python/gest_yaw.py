@@ -23,7 +23,7 @@ class RollPitchYaw(object):
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
-    
+
     def __str__(self):
         return ' | '.join([self.roll, self.pitch, self.yaw])
 
@@ -36,7 +36,13 @@ def attitude_callback(self, attr_name, value):
     global rollpitchyaw
     rollpitchyaw.roll = value.roll* 57.2958
     rollpitchyaw.pitch = value.pitch* 57.2958
-    rollpitchyaw.yaw = value.yaw* 57.2958
+    if rollpitchyaw.yaw < -179 and (value.yaw * 57.2958) > 0:
+        rollpitchyaw.yaw = rollpitchyaw.yaw + (180 - value.yaw * 57.2958)
+    elif rollpitchyaw.yaw > 179 and (value.yaw * 57.2958) < 0:
+        rollpitchyaw.yaw = rollpitchyaw.yaw + (180 + value.yaw * 57.2958)
+    else:
+        rollpitchyaw.yaw = value.yaw* 57.2958
+
 
 def hand_stable(frame, controller):
     print "Keep your hand flat and stable"
