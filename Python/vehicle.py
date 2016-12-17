@@ -71,25 +71,19 @@ class DroneVehicle(Vehicle):
 
     def override_pitch(self, value=None):
         self.channels.overrides[PITCH] = value
-        time.sleep(0.1)
 
     def override_roll(self, value=None):
         self.channels.overrides[ROLL] = value
-        time.sleep(0.1)
 
     def override_throttle(self, value=None):
         self.channels.overrides[THROTTLE] = value
-        time.sleep(0.1)
 
     def override_yaw(self, value=None):
         self.channels.overrides[YAW] = value
-        time.sleep(0.1)
 
     def override(self, value=None):
         throttle, roll, pitch, yaw = value
         self.channels.overrides = {PITCH: pitch, ROLL: roll, THROTTLE: throttle, YAW: yaw}
-        time.sleep(0.1)
 
     def clear_channels(self):
         self.channels.overrides = {}
-        time.sleep(0.1)

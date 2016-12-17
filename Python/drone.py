@@ -1,9 +1,11 @@
 import threading
+
+
 class Drone(object):
+    """Class representing the drone object for data from drone."""
+
     def __init__(self):
         self.acc = [None, None, None]
-        #self.height = -1
-        #self.throttle = None
         self.pitch = None
         self.roll = None
         self.yaw = None
@@ -11,23 +13,20 @@ class Drone(object):
 
     def update_acc(self, ax=None, ay=None, az=None):
         if ax:
-            self.acc[0] = ax
+            self.acc[0] = ax / 1000.0
         if ay:
-            self.acc[1] = ay
+            self.acc[1] = ay / 1000.0
         if az:
-            self.acc[2] = az
-
-    def update_throttle(self, throttle):
-        self.throttle = throttle
+            self.acc[2] = az / 1000.0
 
     def update_pitch(self, pitch):
-        self.pitch = pitch
+        self.pitch = pitch * 57.2958
 
     def update_roll(self, roll):
-        self.roll = roll
+        self.roll = roll * 57.2958
 
     def update_yaw(self, yaw):
-        self.yaw = yaw
+        self.yaw = yaw * 57.2958
 
     def update_height(self, height):
         self.height = height
